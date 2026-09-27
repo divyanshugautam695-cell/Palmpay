@@ -22,6 +22,9 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import com.google.android.gms.barcode.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import java.io.ByteArrayOutputStream
 
 @Suppress("DEPRECATION")
@@ -30,6 +33,34 @@ class MainActivity : Activity() {
     private val cameraRequest = 1001
     private var camera: Camera? = null
     private var pendingPhonePeUri: String? = null
+
+    private fun scanRecipientQr() {
+        try {
+            val options = GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .enableAutoZoom()
+                .build()
+            GmsBarcodeScanning.getClient(this, options)
+                .startScan()
+                .addOnSuccessListener { barcode ->
+                    val raw = barcode.rawValue
+                    if (raw.isNullOrBlank()) {
+                        web.evaluateJavascript("window.qrScanError('The QR code did not contain readable payment data.')", null)
+                    } else {
+                        val encoded = Base64.encodeToString(raw.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+                        web.evaluateJavascript("window.qrScanned(atob('$encoded'))", null)
+                    }
+                }
+                .addOnCanceledListener {
+                    web.evaluateJavascript("window.qrScanCancelled()", null)
+                }
+                .addOnFailureListener {
+                    web.evaluateJavascript("window.qrScanError('Could not scan this QR code. Try a clear UPI QR.')", null)
+                }
+        } catch (_: Exception) {
+            web.evaluateJavascript("window.qrScanError('QR scanner is unavailable on this device.')", null)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
