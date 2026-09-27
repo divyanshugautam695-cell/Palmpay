@@ -5,6 +5,9 @@
         <package android:name="com.phonepe.app"/>
     </queries>
     <application android:theme="@style/AppTheme" android:label="PalmPay" android:icon="@drawable/ic_palmpay">
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="barcode_ui"/>
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
