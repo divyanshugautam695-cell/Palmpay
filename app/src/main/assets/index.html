@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PalmPay</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050607;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;padding:22px 18px 100px;background:radial-gradient(circle at 90% 0,#666 0,#222 15%,#090a0b 42%)}
+.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:25px;font-weight:900}.brand b{background:linear-gradient(90deg,#fff,#999);-webkit-background-clip:text;color:transparent}.avatar{border:1px solid #555;border-radius:50%;padding:12px;background:#111}
+h1{font-size:32px}.muted{color:#999;line-height:1.5}.card{background:linear-gradient(145deg,#191a1b,#0b0c0d);border:1px solid #303030;border-radius:24px;padding:18px;margin:15px 0}.balance{font-size:35px;font-weight:900;margin:8px 0 18px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.q{background:#151617;border:1px solid #333;border-radius:16px;padding:12px 3px;text-align:center;font-size:12px}.q span{display:block;font-size:22px;margin-bottom:5px}
+.btn{width:100%;padding:15px;border:0;border-radius:15px;background:linear-gradient(100deg,#fff,#888);font-weight:900;font-size:15px}.dark{background:#151617;color:#fff;border:1px solid #444}
+.screen{display:none}.active{display:block}input{width:100%;padding:14px;margin:7px 0 12px;background:#0c0d0e;border:1px solid #444;border-radius:13px;color:#fff;font-size:16px}
+.scan{height:260px;display:grid;place-items:center;border-radius:24px;background:radial-gradient(circle,#444,#101010 60%);font-size:105px}.tx{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #292929}.ok{color:#d8ffd9}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#080909ee;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #292929}nav button{background:none;border:0;color:#777;font-size:11px}nav button.active{color:#fff}.ni{display:block;font-size:21px;margin-bottom:3px}
+</style></head><body><div class="app">
+<div class="top"><div class="brand">Palm<b>Pay</b></div><div class="avatar">SK</div></div>
+<section id="home" class="screen active"><p class="muted">PRIVATE • CONTACTLESS • UPI</p><h1>Good evening,<br><span style="color:#bbb">Sujal.</span></h1>
+<div class="card"><div class="muted">Available balance</div><div class="balance">₹2,500.00</div><div class="grid">
+<div class="q" onclick="show('pay')"><span>₹</span>Pay</div><div class="q" onclick="show('scan')"><span>🖐</span>Palm</div><div class="q"><span>▣</span>Scan</div><div class="q" onclick="show('history')"><span>↕</span>History</div></div></div>
+<div class="card"><b>UPI CONNECTED</b><p class="muted">Authenticate with PalmPay, then complete the payment in your authorised UPI app.</p><button class="btn" onclick="show('pay')">Pay with Palm</button></div>
+<div class="card"><h3>Services</h3><div class="grid"><div class="q"><span>☎</span>Mobile</div><div class="q"><span>⚡</span>Electricity</div><div class="q"><span>◫</span>Recharge</div><div class="q"><span>•••</span>More</div></div></div></section>
+<section id="scan" class="screen"><p class="muted">BIOMETRIC AUTHENTICATION</p><h1>Palm scan</h1><div class="scan">🖐️</div><div id="st" class="card">Ready to scan</div><button class="btn" onclick="scan()">Start secure scan</button></section>
+<section id="pay" class="screen"><p class="muted">UPI PAYMENT</p><h1>Send money</h1><div class="card"><label>Recipient UPI ID</label><input id="upi" value="demo@upi"><label>Amount</label><input id="amt" type="number" value="50"><label>Message</label><input id="note" value="PalmPay payment"><button class="btn" onclick="pay()">Scan palm & continue</button><p id="ps" class="muted"></p></div></section>
+<section id="history" class="screen"><p class="muted">ACTIVITY</p><h1>Transactions</h1><div class="card"><div class="tx"><div><b>Demo balance</b><div class="muted">PalmPay prototype</div></div><div class="ok">₹2,500</div></div></div></section>
+<section id="profile" class="screen"><p class="muted">ACCOUNT</p><h1>Sujal Kumar</h1><p class="muted">Father: Sunil Kumar</p><div class="card"><h3>Palm identity</h3><p class="muted">Status: <span class="ok">Demo enrolled</span></p><button class="btn dark" onclick="show('scan')">Test authentication</button></div><div class="card"><h3>Security</h3><p class="muted">This prototype never requests or stores a UPI PIN or real palm image.</p></div></section>
+<nav><button class="active" onclick="show('home',this)"><span class="ni">⌂</span>Home</button><button onclick="show('scan',this)"><span class="ni">🖐</span>Palm</button><button onclick="show('pay',this)"><span class="ni">₹</span>Pay</button><button onclick="show('history',this)"><span class="ni">↕</span>Activity</button><button onclick="show('profile',this)"><span class="ni">●</span>Profile</button></nav>
+</div><script>
+function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active')}
+function scan(){let s=document.getElementById('st');s.textContent='Scanning palm…';setTimeout(()=>s.textContent='✓ Palm pattern matched (demo)',1200)}
+function pay(){let u=document.getElementById('upi').value,a=+document.getElementById('amt').value,n=document.getElementById('note').value;if(!u||a<=0)return;document.getElementById('ps').textContent='Verifying palm…';setTimeout(()=>{document.getElementById('ps').textContent='Palm verified. Opening UPI authorization…';setTimeout(()=>location.href='upi://pay?pa='+encodeURIComponent(u)+'&pn=PalmPay&am='+a.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(n),600)},900)}
+</script></body></html>
