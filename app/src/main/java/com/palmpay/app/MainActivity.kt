@@ -156,17 +156,38 @@ class MainActivity : Activity() {
     private fun openPhonePePayment(uriString: String) {
         runOnUiThread {
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString))
-                intent.setPackage("com.phonepe.app")
-                if (intent.resolveActivity(packageManager) == null) {
-                    web.evaluateJavascript("window.upiError('PhonePe is not installed or cannot accept this UPI payment request.')", null)
+                val uri = Uri.parse(uriString)
+
+                // Prefer PhonePe when it is installed.
+                val phonePeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+                    setPackage("com.phonepe.app")
+                }
+                if (phonePeIntent.resolveActivity(packageManager) != null) {
+                    startActivity(phonePeIntent)
                     return@runOnUiThread
                 }
-                startActivity(intent)
+
+                // If PhonePe is unavailable, fall back to any installed UPI app.
+                val genericIntent = Intent(Intent.ACTION_VIEW, uri)
+                if (genericIntent.resolveActivity(packageManager) != null) {
+                    startActivity(Intent.createChooser(genericIntent, "Choose an installed UPI app"))
+                    return@runOnUiThread
+                }
+
+                web.evaluateJavascript(
+                    "window.upiNoAppFound('No UPI app is installed. Install an authorised UPI app, then try again.')",
+                    null
+                )
             } catch (_: ActivityNotFoundException) {
-                web.evaluateJavascript("window.upiError('PhonePe could not be opened.')", null)
+                web.evaluateJavascript(
+                    "window.upiNoAppFound('No compatible UPI app was found on this phone.')",
+                    null
+                )
             } catch (_: Exception) {
-                web.evaluateJavascript("window.upiError('Could not open PhonePe.')", null)
+                web.evaluateJavascript(
+                    "window.upiError('Could not open a UPI payment app.')",
+                    null
+                )
             }
         }
     }
