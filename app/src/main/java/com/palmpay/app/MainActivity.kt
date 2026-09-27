@@ -29,6 +29,7 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
     private val cameraRequest = 1001
     private var camera: Camera? = null
+    private var pendingPhonePeUri: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +65,10 @@ class MainActivity : Activity() {
             root.addView(surface, FrameLayout.LayoutParams(-1, -1))
 
             val title = TextView(this).apply {
-                text = "PALM SCAN\nKeep your palm inside the frame"
+                text = if (pendingPhonePeUri != null)
+                    "PALM VERIFY\nVerify palm before opening PhonePe"
+                else
+                    "PALM SCAN\nKeep your palm inside the frame"
                 textSize = 19f
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER
@@ -129,16 +133,41 @@ class MainActivity : Activity() {
                     val output = ByteArrayOutputStream()
                     rotated.compress(Bitmap.CompressFormat.JPEG, 82, output)
                     val encoded = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
+                    val paymentUri = pendingPhonePeUri
+                    pendingPhonePeUri = null
                     closeCamera(false)
                     setContentView(web)
                     web.evaluateJavascript("window.palmCaptured('data:image/jpeg;base64,$encoded')", null)
+                    if (paymentUri != null) {
+                        web.evaluateJavascript("window.palmPaymentVerified()", null)
+                        openPhonePePayment(paymentUri)
+                    }
                     if (rotated !== bitmap) rotated.recycle()
                     bitmap.recycle()
                 }
             }
         } catch (_: Exception) {
+            pendingPhonePeUri = null
             closeCamera(false)
             reportCameraError("Could not capture the palm.")
+        }
+    }
+
+    private fun openPhonePePayment(uriString: String) {
+        runOnUiThread {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString))
+                intent.setPackage("com.phonepe.app")
+                if (intent.resolveActivity(packageManager) == null) {
+                    web.evaluateJavascript("window.upiError('PhonePe is not installed or cannot accept this UPI payment request.')", null)
+                    return@runOnUiThread
+                }
+                startActivity(intent)
+            } catch (_: ActivityNotFoundException) {
+                web.evaluateJavascript("window.upiError('PhonePe could not be opened.')", null)
+            } catch (_: Exception) {
+                web.evaluateJavascript("window.upiError('Could not open PhonePe.')", null)
+            }
         }
     }
 
@@ -155,12 +184,14 @@ class MainActivity : Activity() {
         try { camera?.release() } catch (_: Exception) {}
         camera = null
         if (cancelled) {
+            pendingPhonePeUri = null
             setContentView(web)
             web.evaluateJavascript("window.cameraCancelled()", null)
         }
     }
 
     private fun reportCameraError(message: String) {
+        pendingPhonePeUri = null
         setContentView(web)
         web.evaluateJavascript("window.cameraError('" + message.replace("'", "\\'") + "')", null)
     }
@@ -185,6 +216,17 @@ class MainActivity : Activity() {
 
     inner class PalmCameraBridge {
         @JavascriptInterface fun open() { runOnUiThread { openPalmCamera() } }
+
+        @JavascriptInterface fun openForPayment(uriString: String) {
+            runOnUiThread {
+                if (!uriString.startsWith("upi://pay")) {
+                    web.evaluateJavascript("window.upiError('Invalid UPI payment request.')", null)
+                    return@runOnUiThread
+                }
+                pendingPhonePeUri = uriString
+                openPalmCamera()
+            }
+        }
     }
 
     inner class UpiBridge {
