@@ -43,7 +43,7 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;
 <section id="scan" class="screen"><p class="muted">BIOMETRIC AUTHENTICATION</p><h1>Palm scan</h1><div class="scan" id="cameraBox">🖐️<div class="hint">Place your palm clearly inside the camera frame</div></div><div id="st" class="card">Camera ready • Palm scan is protected on this device</div><button class="btn" onclick="scan()">Open camera & scan palm</button></section>
 <section id="pay" class="screen"><p class="muted">PAYMENTS</p><h1>Send money</h1>
 <div class="card"><b>DEMO WALLET</b><p class="muted">Practice transfers use fictional PalmPay demo accounts. No bank, UPI or real money is involved.</p><div class="balance" id="demoBalance">₹2,500.00</div><label>Demo recipient</label><select id="demoRecipient" style="width:100%;padding:14px;margin:7px 0 12px;background:#0c0d0e;border:1px solid #444;border-radius:13px;color:#fff;font-size:16px"><option value="rahul@demo">Rahul Kumar • rahul@demo</option><option value="anaya@demo">Anaya Sharma • anaya@demo</option><option value="school@demo">School Cafeteria • school@demo</option></select><label>Amount</label><input id="demoAmt" type="number" min="1" step="1" value="50"><label>Message</label><input id="demoNote" value="PalmPay demo payment"><button class="btn" onclick="demoPay()">🖐 Verify palm & transfer demo money</button><p id="demoStatus" class="muted"></p></div>
-<div class="card"><b>LIVE UPI</b><p class="muted">For real payments, PalmPay hands the request to an authorised UPI app. This remains separate from Demo Wallet.</p><label>Recipient UPI ID</label><input id="upi" value="demo@upi"><label>Amount</label><input id="amt" type="number" value="50"><label>Message</label><input id="note" value="PalmPay payment"><button class="btn dark" onclick="pay()">🖐 Verify palm & open UPI app</button><button class="btn dark" style="margin-top:9px" onclick="copyLiveUpi()">Copy UPI ID</button><p id="ps" class="muted"></p></div></section>
+<div class="card"><b>LIVE UPI</b><p class="muted">Enter the recipient's actual UPI ID or scan their UPI QR. PalmPay will not turn a mobile number into a <b>mobile@ybl</b> payment address.</p><label>Recipient UPI ID</label><input id="upi" value="" placeholder="example@upi"><div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><button class="btn dark" onclick="scanRecipientQr()">▣ Scan UPI QR</button><button class="btn dark" onclick="pasteUpi()">Paste UPI ID</button></div><label>Amount</label><input id="amt" type="number" value="50" min="1"><label>Message</label><input id="note" value="PalmPay payment"><button class="btn" style="margin-top:9px" onclick="pay()">🖐 Verify palm & open UPI app</button><p id="qrStatus" class="muted"></p><p id="ps" class="muted"></p></div></section>
 <section id="setup" class="screen"><p class="muted">UPI ONBOARDING</p><h1>Create your UPI ID</h1><div class="card"><h3>1. Bank-linked mobile number</h3><p class="muted">For real UPI onboarding, this number must already be registered with your bank. Your bank/PSP performs the verification.</p><input id="bankMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number"><button class="btn dark" onclick="verifyBankMobile()">Verify mobile</button><p id="mobileStatus" class="muted"></p></div><div class="card"><h3>2. Create UPI ID</h3><p class="muted">Choose a username. A real @palmpay UPI ID can only be issued after PalmPay is connected to an authorised UPI PSP/sponsor bank.</p><input id="handle" maxlength="30" placeholder="sujal"><div style="padding:12px;background:#111;border:1px solid #333;border-radius:12px;margin-bottom:12px"><b id="preview">yourname@palmpay</b></div><button class="btn" onclick="createUpi()">Create UPI ID</button><p id="createStatus" class="muted"></p></div><div class="card"><h3>For a minor account</h3><p class="muted">A bank may require a parent/guardian and can set age, balance or transaction limits. RBI permits banks to offer minor accounts subject to their policies and safeguards.</p></div></section>
 <section id="history" class="screen"><p class="muted">ACTIVITY</p><h1>Transactions</h1><div class="card"><b>DEMO TRANSACTIONS</b><p class="muted">All entries below are simulated and have no banking value.</p><div id="demoTx"><div class="tx"><div><b>Demo wallet</b><div class="muted">Starting balance</div></div><div class="ok">₹2,500</div></div></div></div></section>
 <section id="profile" class="screen"><p class="muted">ACCOUNT</p><h1>Sujal Kumar</h1><p class="muted">Father: Sunil Kumar</p><div class="card"><h3>Palm identity</h3><p class="muted">Status: <span class="ok">Demo enrolled</span></p><button class="btn dark" onclick="show('scan')">Test authentication</button></div><div class="card"><h3>Security</h3><p class="muted">This prototype never requests or stores a UPI PIN or real palm image.</p></div></section>
@@ -117,24 +117,76 @@ function loadDemoBalance(){
   document.getElementById('demoBalance').textContent='₹'+b.toFixed(2);
 }
 let pendingLivePayment=false;
+function isMobileYblFormat(u){return /^\\d{10}@ybl$/i.test(u)}
 function pay(){
   const u=document.getElementById('upi').value.trim();
   const a=+document.getElementById('amt').value;
   const n=document.getElementById('note').value.trim();
+  const ps=document.getElementById('ps');
+  if(isMobileYblFormat(u)){
+    ps.textContent='Use the recipient\'s actual UPI ID or scan their UPI QR. PalmPay will not convert a mobile number into mobile@ybl.';
+    return;
+  }
   if(!/^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(u)||!Number.isFinite(a)||a<=0||a>100000){
-    document.getElementById('ps').textContent='Enter a valid UPI ID and amount.';
+    ps.textContent='Enter a valid recipient UPI ID or scan a valid UPI QR, then enter the amount.';
     return;
   }
   const uri='upi://pay?pa='+encodeURIComponent(u)+'&am='+a.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(n||'PalmPay payment');
   pendingLivePayment=true;
-  document.getElementById('ps').textContent='Opening palm verification…';
+  ps.textContent='Opening palm verification…';
   if(window.PalmCamera && window.PalmCamera.openForPayment){
     window.PalmCamera.openForPayment(uri);
   }else{
     pendingLivePayment=false;
-    document.getElementById('ps').textContent='Palm payment camera is unavailable in this build.';
+    ps.textContent='Palm payment camera is unavailable in this build.';
   }
 }
+function scanRecipientQr(){
+  document.getElementById('qrStatus').textContent='Opening secure QR scanner…';
+  if(window.PalmCamera && window.PalmCamera.scanQr){
+    window.PalmCamera.scanQr();
+  }else{
+    document.getElementById('qrStatus').textContent='QR scanner is unavailable in this build.';
+  }
+}
+function pasteUpi(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(v=>{
+      document.getElementById('upi').value=v.trim();
+      document.getElementById('qrStatus').textContent='UPI ID pasted. Check it before paying.';
+    }).catch(()=>document.getElementById('qrStatus').textContent='Clipboard access was unavailable. Paste the UPI ID into the field.');
+  }else{
+    document.getElementById('qrStatus').textContent='Paste the recipient UPI ID into the field.';
+  }
+}
+window.qrScanned=function(raw){
+  try{
+    raw=String(raw||'').trim();
+    let u='',amount='',note='';
+    if(/^upi:\/\/pay/i.test(raw)){
+      const q=raw.substring(raw.indexOf('?')+1).split('&');
+      const params={};
+      q.forEach(pair=>{const p=pair.indexOf('=');if(p>0)params[decodeURIComponent(pair.slice(0,p))]=decodeURIComponent(pair.slice(p+1).replace(/\\+/g,' '));});
+      u=params.pa||'';
+      amount=params.am||'';
+      note=params.tn||'';
+    }else if(/^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(raw)){
+      u=raw;
+    }
+    if(!u || !/^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(u) || isMobileYblFormat(u)){
+      document.getElementById('qrStatus').textContent='That QR is not a usable recipient UPI QR. Please scan the recipient\'s UPI QR.';
+      return;
+    }
+    document.getElementById('upi').value=u;
+    if(amount && Number.isFinite(+amount) && +amount>0) document.getElementById('amt').value=amount;
+    if(note) document.getElementById('note').value=note;
+    document.getElementById('qrStatus').textContent='✓ Recipient loaded from QR: '+u+(amount?' • Amount ₹'+amount:'');
+  }catch(e){
+    document.getElementById('qrStatus').textContent='Could not read this QR as a UPI payment QR.';
+  }
+}
+window.qrScanCancelled=function(){document.getElementById('qrStatus').textContent='QR scan cancelled.'}
+window.qrScanError=function(msg){document.getElementById('qrStatus').textContent='QR error: '+msg}
 window.palmPaymentVerified=function(){
   pendingLivePayment=false;
   document.getElementById('ps').textContent='✓ Palm captured. Opening PhonePe…';
