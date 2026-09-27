@@ -14,3 +14,6 @@ Important: the palm layer is a demonstration and does not perform bank-grade bio
 
 
 Build automation enabled on GitHub Actions.
+
+
+<!-- Build trigger: UPI ID + QR recipient flow -->
