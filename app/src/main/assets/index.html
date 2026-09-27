@@ -43,7 +43,7 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;
 <section id="scan" class="screen"><p class="muted">BIOMETRIC AUTHENTICATION</p><h1>Palm scan</h1><div class="scan" id="cameraBox">🖐️<div class="hint">Place your palm clearly inside the camera frame</div></div><div id="st" class="card">Camera ready • Palm scan is protected on this device</div><button class="btn" onclick="scan()">Open camera & scan palm</button></section>
 <section id="pay" class="screen"><p class="muted">PAYMENTS</p><h1>Send money</h1>
 <div class="card"><b>DEMO WALLET</b><p class="muted">Practice transfers use fictional PalmPay demo accounts. No bank, UPI or real money is involved.</p><div class="balance" id="demoBalance">₹2,500.00</div><label>Demo recipient</label><select id="demoRecipient" style="width:100%;padding:14px;margin:7px 0 12px;background:#0c0d0e;border:1px solid #444;border-radius:13px;color:#fff;font-size:16px"><option value="rahul@demo">Rahul Kumar • rahul@demo</option><option value="anaya@demo">Anaya Sharma • anaya@demo</option><option value="school@demo">School Cafeteria • school@demo</option></select><label>Amount</label><input id="demoAmt" type="number" min="1" step="1" value="50"><label>Message</label><input id="demoNote" value="PalmPay demo payment"><button class="btn" onclick="demoPay()">🖐 Verify palm & transfer demo money</button><p id="demoStatus" class="muted"></p></div>
-<div class="card"><b>LIVE UPI</b><p class="muted">For real payments, PalmPay hands the request to an authorised UPI app. This remains separate from Demo Wallet.</p><label>Recipient UPI ID</label><input id="upi" value="demo@upi"><label>Amount</label><input id="amt" type="number" value="50"><label>Message</label><input id="note" value="PalmPay payment"><button class="btn dark" onclick="pay()">Open authorised UPI app</button><p id="ps" class="muted"></p></div></section>
+<div class="card"><b>LIVE UPI</b><p class="muted">For real payments, PalmPay hands the request to an authorised UPI app. This remains separate from Demo Wallet.</p><label>Recipient UPI ID</label><input id="upi" value="demo@upi"><label>Amount</label><input id="amt" type="number" value="50"><label>Message</label><input id="note" value="PalmPay payment"><button class="btn dark" onclick="pay()">🖐 Verify palm & open UPI app</button><button class="btn dark" style="margin-top:9px" onclick="copyLiveUpi()">Copy UPI ID</button><p id="ps" class="muted"></p></div></section>
 <section id="setup" class="screen"><p class="muted">UPI ONBOARDING</p><h1>Create your UPI ID</h1><div class="card"><h3>1. Bank-linked mobile number</h3><p class="muted">For real UPI onboarding, this number must already be registered with your bank. Your bank/PSP performs the verification.</p><input id="bankMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number"><button class="btn dark" onclick="verifyBankMobile()">Verify mobile</button><p id="mobileStatus" class="muted"></p></div><div class="card"><h3>2. Create UPI ID</h3><p class="muted">Choose a username. A real @palmpay UPI ID can only be issued after PalmPay is connected to an authorised UPI PSP/sponsor bank.</p><input id="handle" maxlength="30" placeholder="sujal"><div style="padding:12px;background:#111;border:1px solid #333;border-radius:12px;margin-bottom:12px"><b id="preview">yourname@palmpay</b></div><button class="btn" onclick="createUpi()">Create UPI ID</button><p id="createStatus" class="muted"></p></div><div class="card"><h3>For a minor account</h3><p class="muted">A bank may require a parent/guardian and can set age, balance or transaction limits. RBI permits banks to offer minor accounts subject to their policies and safeguards.</p></div></section>
 <section id="history" class="screen"><p class="muted">ACTIVITY</p><h1>Transactions</h1><div class="card"><b>DEMO TRANSACTIONS</b><p class="muted">All entries below are simulated and have no banking value.</p><div id="demoTx"><div class="tx"><div><b>Demo wallet</b><div class="muted">Starting balance</div></div><div class="ok">₹2,500</div></div></div></div></section>
 <section id="profile" class="screen"><p class="muted">ACCOUNT</p><h1>Sujal Kumar</h1><p class="muted">Father: Sunil Kumar</p><div class="card"><h3>Palm identity</h3><p class="muted">Status: <span class="ok">Demo enrolled</span></p><button class="btn dark" onclick="show('scan')">Test authentication</button></div><div class="card"><h3>Security</h3><p class="muted">This prototype never requests or stores a UPI PIN or real palm image.</p></div></section>
@@ -142,6 +142,19 @@ window.palmPaymentVerified=function(){
 window.upiError=function(msg){
   pendingLivePayment=false;
   document.getElementById('ps').textContent='UPI error: '+msg;
+}
+window.upiNoAppFound=function(msg){
+  pendingLivePayment=false;
+  document.getElementById('ps').innerHTML='⚠️ '+msg+'<br><br><b>For a real payment:</b> install/sign in to an authorised UPI app on this phone, then return to PalmPay and try again. No UPI PIN is entered into PalmPay.';
+}
+function copyLiveUpi(){
+  const u=document.getElementById('upi').value.trim();
+  if(!u){document.getElementById('ps').textContent='Enter a UPI ID first.';return}
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(u).then(()=>document.getElementById('ps').textContent='✓ UPI ID copied: '+u).catch(()=>document.getElementById('ps').textContent='UPI ID: '+u);
+  }else{
+    document.getElementById('ps').textContent='UPI ID: '+u;
+  }
 }
 </script></body></html>
 
