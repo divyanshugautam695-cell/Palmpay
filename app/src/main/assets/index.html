@@ -116,8 +116,33 @@ function loadDemoBalance(){
   const b=Number(localStorage.getItem('palmpay_demo_balance')||2500);
   document.getElementById('demoBalance').textContent='₹'+b.toFixed(2);
 }
-function pay(){let u=document.getElementById('upi').value.trim(),a=+document.getElementById('amt').value,n=document.getElementById('note').value.trim();if(!/^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(u)||!Number.isFinite(a)||a<=0||a>100000){document.getElementById('ps').textContent='Enter a valid UPI ID and amount.';return}document.getElementById('ps').textContent='Verifying palm…';setTimeout(()=>{document.getElementById('ps').textContent='✓ Palm verified. Choose your UPI app…';let uri='upi://pay?pa='+encodeURIComponent(u)+'&am='+a.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(n||'PalmPay payment');setTimeout(()=>{if(window.PalmUPI){window.PalmUPI.openPayment(uri)}else{document.getElementById('ps').textContent='UPI handoff is unavailable in this build.'}},500)},900)}
-window.upiError=function(msg){document.getElementById('ps').textContent='UPI error: '+msg+'. You can copy the UPI ID and pay from your UPI app.'}
+let pendingLivePayment=false;
+function pay(){
+  const u=document.getElementById('upi').value.trim();
+  const a=+document.getElementById('amt').value;
+  const n=document.getElementById('note').value.trim();
+  if(!/^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9._-]{2,64}$/.test(u)||!Number.isFinite(a)||a<=0||a>100000){
+    document.getElementById('ps').textContent='Enter a valid UPI ID and amount.';
+    return;
+  }
+  const uri='upi://pay?pa='+encodeURIComponent(u)+'&am='+a.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(n||'PalmPay payment');
+  pendingLivePayment=true;
+  document.getElementById('ps').textContent='Opening palm verification…';
+  if(window.PalmCamera && window.PalmCamera.openForPayment){
+    window.PalmCamera.openForPayment(uri);
+  }else{
+    pendingLivePayment=false;
+    document.getElementById('ps').textContent='Palm payment camera is unavailable in this build.';
+  }
+}
+window.palmPaymentVerified=function(){
+  pendingLivePayment=false;
+  document.getElementById('ps').textContent='✓ Palm captured. Opening PhonePe…';
+}
+window.upiError=function(msg){
+  pendingLivePayment=false;
+  document.getElementById('ps').textContent='UPI error: '+msg;
+}
 </script></body></html>
 
 <script>initLogin();</script>
