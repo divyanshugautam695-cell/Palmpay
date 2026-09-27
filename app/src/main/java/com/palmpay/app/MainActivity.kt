@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.ActivityNotFoundException
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
@@ -27,6 +28,7 @@ class MainActivity : Activity() {
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.addJavascriptInterface(PalmCameraBridge(), "PalmCamera")
+        web.addJavascriptInterface(UpiBridge(), "PalmUPI")
 
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
@@ -91,6 +93,27 @@ class MainActivity : Activity() {
             }
         } else {
             web.evaluateJavascript("window.cameraCancelled()", null)
+        }
+    }
+
+    inner class UpiBridge {
+        @JavascriptInterface
+        fun openPayment(uriString: String) {
+            runOnUiThread {
+                try {
+                    val paymentIntent = Intent(Intent.ACTION_VIEW, Uri.parse(uriString))
+                    if (paymentIntent.resolveActivity(packageManager) == null) {
+                        web.evaluateJavascript("window.upiError('No UPI app is installed on this phone.')", null)
+                        return@runOnUiThread
+                    }
+                    val chooser = Intent.createChooser(paymentIntent, "Choose UPI app")
+                    startActivity(chooser)
+                } catch (e: ActivityNotFoundException) {
+                    web.evaluateJavascript("window.upiError('No compatible UPI app was found.')", null)
+                } catch (e: Exception) {
+                    web.evaluateJavascript("window.upiError('Could not open the UPI payment app.')", null)
+                }
+            }
         }
     }
 
