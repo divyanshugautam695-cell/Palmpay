@@ -2,6 +2,8 @@
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PalmPay</title>
 <style>
+.loginGate{max-width:520px;margin:auto;min-height:100vh;padding:70px 22px;background:radial-gradient(circle at 50% 0,#555 0,#151617 25%,#050607 65%);text-align:center}.loginLogo{font-size:38px;font-weight:900;margin-bottom:10px}.loginLogo b{background:linear-gradient(90deg,#fff,#999);-webkit-background-clip:text;color:transparent}.loginGate h1{font-size:30px;margin:28px 0 18px}.loginGate .card{text-align:left}.loginGate .btn{margin-top:4px;margin-bottom:8px}
+
 *{box-sizing:border-box}body{margin:0;background:#050607;color:#fff;font-family:Arial,sans-serif}
 .app{max-width:520px;margin:auto;min-height:100vh;padding:22px 18px 100px;background:radial-gradient(circle at 90% 0,#666 0,#222 15%,#090a0b 42%)}
 .top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:25px;font-weight:900}.brand b{background:linear-gradient(90deg,#fff,#999);-webkit-background-clip:text;color:transparent}.avatar{border:1px solid #555;border-radius:50%;padding:12px;background:#111}
@@ -12,6 +14,26 @@ h1{font-size:32px}.muted{color:#999;line-height:1.5}.card{background:linear-grad
 .scan{height:300px;display:grid;place-items:center;border-radius:24px;background:radial-gradient(circle,#444,#101010 60%);font-size:105px;overflow:hidden;position:relative}.scan img{width:100%;height:100%;object-fit:cover}.scan .hint{position:absolute;bottom:12px;left:12px;right:12px;padding:9px;border-radius:12px;background:#000b;color:#fff;font-size:12px;text-align:center}.tx{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #292929}.ok{color:#d8ffd9}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#080909ee;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #292929}nav button{background:none;border:0;color:#777;font-size:11px}nav button.active{color:#fff}.ni{display:block;font-size:21px;margin-bottom:3px}
 </style></head><body><div class="app">
+<div id="loginGate" class="loginGate">
+<div class="loginLogo">Palm<b>Pay</b></div>
+<p class="muted">SECURE MOBILE LOGIN • UPI</p>
+<h1 id="loginTitle">Login with mobile number</h1>
+<div class="card" id="mobileStep">
+<p class="muted">Use the mobile number registered with your bank for your UPI account.</p>
+<input id="loginMobile" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number">
+<button class="btn" onclick="sendLoginOtp()">Continue</button>
+<p id="loginStatus" class="muted"></p>
+</div>
+<div class="card" id="otpStep" style="display:none">
+<p class="muted">Enter the OTP sent to your mobile number.</p>
+<input id="loginOtp" inputmode="numeric" maxlength="6" placeholder="6-digit OTP">
+<button class="btn" onclick="verifyLoginOtp()">Verify & login</button>
+<button class="btn dark" onclick="backToMobile()">Change mobile number</button>
+<p class="muted">Prototype mode: no SMS is sent. Use OTP <b>123456</b> for this demo.</p>
+<p id="otpStatus" class="muted"></p>
+</div>
+</div>
+<div class="appShell" id="appShell" style="display:none">
 <div class="top"><div class="brand">Palm<b>Pay</b></div><div class="avatar">SK</div></div>
 <section id="home" class="screen active"><p class="muted">PRIVATE • CONTACTLESS • UPI</p><h1>Good evening,<br><span style="color:#bbb">Sujal.</span></h1>
 <div class="card"><div class="muted">Available balance</div><div class="balance">₹2,500.00</div><div class="grid">
@@ -24,7 +46,40 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;
 <section id="history" class="screen"><p class="muted">ACTIVITY</p><h1>Transactions</h1><div class="card"><div class="tx"><div><b>Demo balance</b><div class="muted">PalmPay prototype</div></div><div class="ok">₹2,500</div></div></div></section>
 <section id="profile" class="screen"><p class="muted">ACCOUNT</p><h1>Sujal Kumar</h1><p class="muted">Father: Sunil Kumar</p><div class="card"><h3>Palm identity</h3><p class="muted">Status: <span class="ok">Demo enrolled</span></p><button class="btn dark" onclick="show('scan')">Test authentication</button></div><div class="card"><h3>Security</h3><p class="muted">This prototype never requests or stores a UPI PIN or real palm image.</p></div></section>
 <nav><button class="active" onclick="show('home',this)"><span class="ni">⌂</span>Home</button><button onclick="show('scan',this)"><span class="ni">🖐</span>Palm</button><button onclick="show('pay',this)"><span class="ni">₹</span>Pay</button><button onclick="show('history',this)"><span class="ni">↕</span>Activity</button><button onclick="show('profile',this)"><span class="ni">●</span>Profile</button></nav>
-</div><script>
+</div></div><script>
+function isValidMobile(v){return /^[0-9]{10}$/.test(v)}
+function sendLoginOtp(){
+  let v=document.getElementById('loginMobile').value.trim(),s=document.getElementById('loginStatus');
+  if(!isValidMobile(v)){s.textContent='Enter a valid 10-digit mobile number.';return}
+  s.textContent='Mobile number accepted. In a real app, an OTP would be sent by the authentication service.';
+  document.getElementById('mobileStep').style.display='none';
+  document.getElementById('otpStep').style.display='block';
+  document.getElementById('loginTitle').textContent='Verify your mobile';
+}
+function backToMobile(){
+  document.getElementById('otpStep').style.display='none';
+  document.getElementById('mobileStep').style.display='block';
+  document.getElementById('loginTitle').textContent='Login with mobile number';
+}
+function verifyLoginOtp(){
+  let otp=document.getElementById('loginOtp').value.trim(),s=document.getElementById('otpStatus');
+  if(otp!=='123456'){s.textContent='Incorrect demo OTP. Use 123456 in prototype mode.';return}
+  let mobile=document.getElementById('loginMobile').value.trim();
+  localStorage.setItem('palmpay_logged_in','1');
+  localStorage.setItem('palmpay_mobile_last4',mobile.slice(-4));
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('appShell').style.display='block';
+}
+function logout(){
+  localStorage.removeItem('palmpay_logged_in');
+  location.reload();
+}
+function initLogin(){
+  if(localStorage.getItem('palmpay_logged_in')==='1'){
+    document.getElementById('loginGate').style.display='none';
+    document.getElementById('appShell').style.display='block';
+  }
+}
 function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active')}
 function scan(){let s=document.getElementById('st');s.textContent='Opening camera…';if(window.PalmCamera){PalmCamera.open()}else{s.textContent='Camera interface unavailable in this build.'}}
 window.palmCaptured=function(src){let s=document.getElementById('st');s.textContent='Analyzing palm image…';let box=document.getElementById('cameraBox');box.innerHTML='<img src="'+src+'" alt="Captured palm"><div class="hint">Palm captured • analyzing securely</div>';setTimeout(()=>s.textContent='✓ Palm pattern matched (demo). No palm image is saved.',1400)}
@@ -33,3 +88,5 @@ window.cameraError=function(msg){document.getElementById('st').textContent='Came
 document.getElementById('handle').addEventListener('input',function(){let v=this.value.toLowerCase().replace(/[^a-z0-9._-]/g,'');this.value=v;document.getElementById('preview').textContent=(v||'yourname')+'@palmpay'});function verifyBankMobile(){let v=document.getElementById('bankMobile').value.trim();let st=document.getElementById('mobileStatus');if(!/^\\d{10}$/.test(v)){st.textContent='Enter a valid 10-digit mobile number.';return}st.textContent='✓ Number format accepted. In a real UPI integration, the PSP/bank would now verify that this SIM/number is registered with the bank.'}function createUpi(){let h=document.getElementById('handle').value.trim();let st=document.getElementById('createStatus');if(!/^([a-z0-9][a-z0-9._-]{2,29})$/.test(h)){st.textContent='Choose a valid username (3–30 letters/numbers).';return}if(!/^\\d{10}$/.test(document.getElementById('bankMobile').value.trim())){st.textContent='Verify your bank-linked mobile number first.';return}let id=h+'@palmpay';localStorage.setItem('palmpay_demo_upi',id);document.getElementById('upiStatus').textContent='UPI ID: '+id+' • Demo setup';st.textContent='✓ '+id+' created for this prototype. It is not yet a live UPI address until PalmPay has an authorised PSP/sponsor-bank integration.'}function pay(){let u=document.getElementById('upi').value.trim(),a=+document.getElementById('amt').value,n=document.getElementById('note').value.trim();if(!u||a<=0){document.getElementById('ps').textContent='Enter a valid UPI ID and amount.';return}document.getElementById('ps').textContent='Verifying palm…';setTimeout(()=>{document.getElementById('ps').textContent='✓ Palm verified. Choose your UPI app…';let uri='upi://pay?pa='+encodeURIComponent(u)+'&am='+a.toFixed(2)+'&cu=INR&tn='+encodeURIComponent(n||'PalmPay payment');setTimeout(()=>{if(window.PalmUPI){window.PalmUPI.openPayment(uri)}else{document.getElementById('ps').textContent='UPI handoff is unavailable in this build.'}},500)},900)}
 window.upiError=function(msg){document.getElementById('ps').textContent='UPI error: '+msg+'. You can copy the UPI ID and pay from your UPI app.'}
 </script></body></html>
+
+<script>initLogin();</script>
