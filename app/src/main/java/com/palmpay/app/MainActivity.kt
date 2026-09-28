@@ -22,7 +22,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.gms.barcode.Barcode
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import java.io.ByteArrayOutputStream
@@ -268,6 +268,8 @@ class MainActivity : Activity() {
 
     inner class PalmCameraBridge {
         @JavascriptInterface fun open() { runOnUiThread { openPalmCamera() } }
+
+        @JavascriptInterface fun scanQr() { runOnUiThread { scanRecipientQr() } }
 
         @JavascriptInterface fun openForPayment(uriString: String) {
             runOnUiThread {
